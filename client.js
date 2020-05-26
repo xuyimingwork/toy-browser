@@ -12,7 +12,9 @@ const client = net.createConnection({
   host: '127.0.0.1',
   port: 8088 }, () => {
   console.log('连接成功，发送数据');
-  client.write('world!\r\n');
+  client.write('GET / HTTP/1.1\r\n');
+  client.write('Host: 127.0.0.1\r\n');
+  client.write('\r\n');
 });
 
 client.on('data', (data) => {
