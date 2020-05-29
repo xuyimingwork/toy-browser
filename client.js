@@ -1,4 +1,5 @@
 const net = require('net');
+const parser = require('./parser')
 
 class Request {
   constructor({
@@ -222,6 +223,6 @@ const request = new Request({
   }
 })
 request.send()
-  .then(data => {
-    console.log(data)
+  .then(response => {
+    const dom = parser.parseHTML(response.body)
   });
