@@ -1,11 +1,24 @@
 const EOF = Symbol('EOF') // End Of File
 
+let currentToken = null;
+function emit(token) {
+  if (token.type === 'text') return
+  console.log(token)
+}
+
 function data(c) {
   if (c === '<') {
     return tagOpen 
   } else if (c === EOF) {
+    emit({
+      type: 'EOF'
+    })
     return;
   } else {
+    emit({
+      type: 'text',
+      content: c
+    })
     return data
   }
 }
@@ -16,6 +29,10 @@ function tagOpen(c) {
     return endTagOpen
   } else if (c.match(/^[a-zA-Z]$/)) {
     // 切换至 tagName 状态，让 tagName 状态重新 consume 当前字符
+    currentToken = {
+      type: 'startTag',
+      tagName: ''
+    }
     return tagName(c)
   } else {
     throw new Error()
@@ -24,6 +41,10 @@ function tagOpen(c) {
 
 function endTagOpen(c) {
   if (c.match(/^[a-zA-Z]$/)) {
+    currentToken = {
+      type: 'endTag',
+      tagName: ''
+    }
     return tagName(c)
   } else {
     throw Error('')
@@ -37,8 +58,10 @@ function tagName(c) {
     // 当 / 紧邻名字时，如 <img/>
     return selfClosingStartTag
   } else if (c === '>') {
+    emit(currentToken)
     return data
   } else if (c.match(/^[a-zA-Z]$/)) {
+    currentToken.tagName += c.toLowerCase()
     return tagName
   } else {
     throw Error('')
@@ -57,6 +80,8 @@ function beforeAttributeName(c) {
 
 function selfClosingStartTag(c) {
   if (c === '>') {
+    currentToken.isSelfClosing = true
+    emit(currentToken)
     return data
   } else {
     throw Error('')
@@ -66,7 +91,6 @@ function selfClosingStartTag(c) {
 module.exports.parseHTML = function(html) {
   let state = data
   for (let c of html) {
-    console.log(state.name, JSON.stringify(c))
     state = state(c)
   }
   state = state(EOF)
