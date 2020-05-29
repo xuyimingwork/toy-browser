@@ -31,15 +31,27 @@ function endTagOpen(c) {
 }
 
 function tagName(c) {
-  if (c.match(/^[a-zA-Z]$/)) {
-    return tagName
+  if (c.match(/^[\t\n\f ]$/)) {
+    return beforeAttributeName
   } else if (c === '/') {
     // 当 / 紧邻名字时，如 <img/>
     return selfClosingStartTag
   } else if (c === '>') {
     return data
-  } else {
+  } else if (c.match(/^[a-zA-Z]$/)) {
     return tagName
+  } else {
+    throw Error('')
+  }
+}
+
+function beforeAttributeName(c) {
+  if (c.match(/^[\t\n\f ]$/)) {
+    return beforeAttributeName
+  } else if (c === '>') {
+    return data
+  } else {
+    return beforeAttributeName
   }
 }
 
