@@ -3,9 +3,26 @@ const EOF = Symbol('EOF') // End Of File
 let currentToken = null;
 let currentAttribute = null;
 
+const stack = [{ type: 'document', children: [] }]
+
 function emit(token) {
   if (token.type === 'text') return
-  console.log(token)
+  
+  const top = stack[stack.length - 1]
+  if (token.type === 'startTag') {
+    const element = {
+      type: 'element',
+      tagName: token.tagName,
+      // parent: top,
+      children: [],
+      attributes: token.attributes
+    }
+    top.children.push(element)
+    if (!token.isSelfClosing) stack.push(element)
+  } else if (token.type === 'endTag') {
+    if (top.tagName === token.tagName) stack.pop()
+    else throw Error()
+  }
 }
 
 function data(c) {
@@ -212,5 +229,6 @@ module.exports.parseHTML = function(html) {
   for (let c of html) {
     state = state(c)
   }
+  console.log(JSON.stringify(stack[0], null, 2))
   state = state(EOF)
 }
