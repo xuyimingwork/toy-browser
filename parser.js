@@ -33,7 +33,8 @@ function tagOpen(c) {
     // 切换至 tagName 状态，让 tagName 状态重新 consume 当前字符
     currentToken = {
       type: 'startTag',
-      tagName: ''
+      tagName: '',
+      attributes: []
     }
     return tagName(c)
   } else {
@@ -134,7 +135,7 @@ function beforeAttributeValue(c) {
 
 function doubleQuotedAttributeValue(c) {
   if (c === '"') {
-    currentToken[currentAttribute.name] = currentAttribute.value
+    currentToken.attributes.push(currentAttribute)
     return afterQuotedAttributeValue 
   } else if (c === '\u0000') {
     throw Error()
@@ -148,7 +149,7 @@ function doubleQuotedAttributeValue(c) {
 
 function singleQuotedAttributeValue(c) {
   if (c === '\'') {
-    currentToken[currentAttribute.name] = currentAttribute.value
+    currentToken.attributes.push(currentAttribute)
     return afterQuotedAttributeValue
   } else if (c === '\u0000') {
     throw Error()
@@ -162,13 +163,13 @@ function singleQuotedAttributeValue(c) {
 
 function unquotedAttributeValue(c) {
   if (c.match(/^[\t\n\f ]$/)) {
-    currentToken[currentAttribute.name] = currentAttribute.value
+    currentToken.attributes.push(currentAttribute)
     return beforeAttributeName
   } else if (c === '/') {
-    currentToken[currentAttribute.name] = currentAttribute.value
+    currentToken.attributes.push(currentAttribute)
     return selfClosingStartTag
   } else if (c === '>') {
-    currentToken[currentAttribute.name] = currentAttribute.value
+    currentToken.attributes.push(currentAttribute)
     emit(currentToken)
     return data
   } else if (c === '\u0000') {
