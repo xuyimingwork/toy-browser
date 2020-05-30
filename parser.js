@@ -2,12 +2,11 @@ const EOF = Symbol('EOF') // End Of File
 
 let currentToken = null;
 let currentAttribute = null;
+let currentTextNode = null;
 
 const stack = [{ type: 'document', children: [] }]
 
-function emit(token) {
-  if (token.type === 'text') return
-  
+function emit(token) {  
   const top = stack[stack.length - 1]
   if (token.type === 'startTag') {
     const element = {
@@ -19,9 +18,20 @@ function emit(token) {
     }
     top.children.push(element)
     if (!token.isSelfClosing) stack.push(element)
+    currentTextNode = null
   } else if (token.type === 'endTag') {
     if (top.tagName === token.tagName) stack.pop()
     else throw Error()
+    currentTextNode = null
+  } else if (token.type === 'text') {
+    if (!currentTextNode) {
+      currentTextNode = {
+        type: 'text',
+        content: ''
+      }
+      top.children.push(currentTextNode)
+    }
+    currentTextNode.content += token.content
   }
 }
 
