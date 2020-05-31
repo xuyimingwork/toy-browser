@@ -13,7 +13,7 @@ function emit(token) {
     const element = {
       type: 'element',
       tagName: token.tagName,
-      parent: top,
+      // parent: top,
       children: [],
       attributes: token.attributes
     }
@@ -77,7 +77,16 @@ function computeCSS(element) {
     if (j >= selectorParts.length) matched = true
 
     if (matched) {
-      console.log('el', element.tagName, element.attributes, '\nmatched', rule.selectors[0])
+      const sp = specificity(rule.selectors[0])
+      const computedStyle = element.computedStyle
+      for (let declaration of rule.declarations) {
+        if (!computedStyle[declaration.property]) computedStyle[declaration.property] = {}
+        if (!computedStyle[declaration.property].specificity 
+          || compare(computedStyle[declaration.property].specificity, sp) <= 0){
+              computedStyle[declaration.property].specificity = specificity(rule.selectors[0])
+              computedStyle[declaration.property].value = declaration.value
+          }
+      }
     }
   }
 }
@@ -101,6 +110,28 @@ function match(element, selector) {
   }
 
   return false
+}
+
+function specificity(selector) {
+  const p = [0, 0, 0]
+  const selectorParts = selector.split(' ')
+  for (let part of selectorParts) {
+    if (part.charAt(0) === '#') {
+      p[0] += 1
+    } else if (part.charAt(0) === '.') {
+      p[1] += 1
+    } else {
+      p[2] += 1
+    }
+  }
+  return p
+}
+
+function compare(sp1, sp2) {
+  if (sp1[0] - sp2[0]) return sp1[0] - sp2[0]
+  if (sp1[1] - sp2[1]) return sp1[1] - sp2[1]
+  if (sp1[2] - sp2[2]) return sp1[2] - sp2[2]
+  return 0
 }
 
 function data(c) {
@@ -307,5 +338,6 @@ module.exports.parseHTML = function(html) {
   for (let c of html) {
     state = state(c)
   }
+  console.log(JSON.stringify(stack[0], null, 2))
   state = state(EOF)
 }
