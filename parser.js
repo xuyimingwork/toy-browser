@@ -1,3 +1,4 @@
+const css = require('css')
 const EOF = Symbol('EOF') // End Of File
 
 let currentToken = null;
@@ -20,7 +21,12 @@ function emit(token) {
     if (!token.isSelfClosing) stack.push(element)
     currentTextNode = null
   } else if (token.type === 'endTag') {
-    if (top.tagName === token.tagName) stack.pop()
+    if (top.tagName === token.tagName) {
+      if (top.tagName === 'style') {
+        addCSSRules(top.children[0].content)
+      }
+      stack.pop()
+    }
     else throw Error()
     currentTextNode = null
   } else if (token.type === 'text') {
@@ -33,6 +39,12 @@ function emit(token) {
     }
     currentTextNode.content += token.content
   }
+}
+
+let rules = []
+function addCSSRules(text) {
+  const ast = css.parse(text)
+  rules.push(...ast.stylesheet.rules)
 }
 
 function data(c) {
@@ -239,6 +251,6 @@ module.exports.parseHTML = function(html) {
   for (let c of html) {
     state = state(c)
   }
-  console.log(JSON.stringify(stack[0], null, 2))
+  console.log(JSON.stringify(rules, null, 2))
   state = state(EOF)
 }
