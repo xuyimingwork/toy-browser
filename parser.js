@@ -13,10 +13,11 @@ function emit(token) {
     const element = {
       type: 'element',
       tagName: token.tagName,
-      // parent: top,
+      parent: top,
       children: [],
       attributes: token.attributes
     }
+    computeCSS(element)
     top.children.push(element)
     if (!token.isSelfClosing) stack.push(element)
     currentTextNode = null
@@ -45,6 +46,9 @@ let rules = []
 function addCSSRules(text) {
   const ast = css.parse(text)
   rules.push(...ast.stylesheet.rules)
+}
+function computeCSS(element) {
+  console.log(rules, element)
 }
 
 function data(c) {
@@ -251,6 +255,5 @@ module.exports.parseHTML = function(html) {
   for (let c of html) {
     state = state(c)
   }
-  console.log(JSON.stringify(rules, null, 2))
   state = state(EOF)
 }
