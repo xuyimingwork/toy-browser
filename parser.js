@@ -43,12 +43,64 @@ function emit(token) {
 }
 
 let rules = []
+
 function addCSSRules(text) {
   const ast = css.parse(text)
   rules.push(...ast.stylesheet.rules)
 }
+
 function computeCSS(element) {
-  console.log(rules, element)
+  const elements = stack.slice().reverse()
+  if (!element.computedStyle) element.computedStyle = {}
+
+  // 遍历每条 CSS 规则，看是否与当前元素匹配
+  for (let rule of rules) {
+    /**
+     * 对于单条规则
+     * 1. 只考虑单个选择器，不考虑逗号分隔的选择器组
+     * 2. 只考虑以空格分隔的后代组合选择器，不考虑子元素、兄弟等组合选择器
+     * 3. selectorParts 中各项均为简单选择器（只考虑 id、类、类型三种简单选择器）
+     */
+    const selectorParts = rule.selectors[0].split(' ').reverse()
+    if (!match(element, selectorParts[0])) continue
+
+    let matched = false
+
+    let j = 1;
+    for (let i = 0; i < elements.length; i++) {
+      if (match(elements[i], selectorParts[j])) {
+        j++
+      }
+    }
+
+    // 若选择器的各部分简单选择器均匹配，则该条规则匹配
+    if (j >= selectorParts.length) matched = true
+
+    if (matched) {
+      console.log('el', element.tagName, element.attributes, '\nmatched', rule.selectors[0])
+    }
+  }
+}
+
+/**
+ * 判断元素与简单选择器是否匹配
+ * @param {*} element 元素
+ * @param {*} selector 简单选择器（id、类、类型）
+ */
+function match(element, selector) {
+  if (!selector || !element.attributes) return false
+
+  if (selector.charAt(0) === '#') {
+    const attr = element.attributes.filter(attr => attr.name === 'id')[0]
+    if (attr && attr.value === selector.replace('#', '')) return true
+  } else if (selector.charAt(0) === '.') {
+    const attr = element.attributes.filter(attr => attr.name === 'class')[0]
+    if (attr && attr.value === selector.replace('.', '')) return true
+  } else if (element.tagName === selector) {
+    return true
+  }
+
+  return false
 }
 
 function data(c) {
