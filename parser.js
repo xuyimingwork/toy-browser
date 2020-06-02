@@ -1,4 +1,5 @@
 const css = require('css')
+const layout = require('./layout')
 const EOF = Symbol('EOF') // End Of File
 
 let currentToken = null;
@@ -26,6 +27,7 @@ function emit(token) {
       if (top.tagName === 'style') {
         addCSSRules(top.children[0].content)
       }
+      layout(top)
       stack.pop()
     }
     else throw Error()
@@ -338,6 +340,5 @@ module.exports.parseHTML = function(html) {
   for (let c of html) {
     state = state(c)
   }
-  console.log(JSON.stringify(stack[0], null, 2))
   state = state(EOF)
 }
