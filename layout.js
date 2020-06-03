@@ -26,8 +26,13 @@ function layout(element) {
     crossSize, crossStart, crossEnd, crossSign, crossBase
   } = initAbstractAxisVariable(style)
 
-  console.log(mainSize, mainStart, mainEnd, mainSign, mainBase)
-  console.log(crossSize, crossStart, crossEnd, crossSign, crossBase)
+  const flexLines = collectItemsIntoLines({
+    style, children: element.children, mainSize, crossSize
+  })
+
+
+
+  console.log(flexLines)
 }
 
 function getStyle(element) {
@@ -113,6 +118,68 @@ function initAbstractAxisVariable(style) {
     mainSize, mainStart, mainEnd, mainSign, mainBase,
       crossSize, crossStart, crossEnd, crossSign, crossBase
   }
+}
+
+function collectItemsIntoLines({
+  style, children, mainSize, crossSize
+}) {
+  const items = children
+    .filter(node => node.type === 'element')
+    .map(element => {
+      getStyle(element)
+      return element
+    })
+    .sort((a, b) => (a.style.order || 0) - (b.style.order || 0))
+
+  let flexLine = []
+  const flexLines = [flexLine]
+
+  let mainSpace = style[mainSize]
+  let crossSpace = 0
+  
+  for (item of items) {
+    const itemStyle = getStyle(item)
+    
+    if (!itemStyle[mainSize]) {
+      itemStyle[mainSize] = 0
+    }
+
+    if (style.flexWrap === 'nowrap') {
+      // 一排情况
+      flexLine.push(item)
+    } else {
+      // 可能单排或多排
+      if (itemStyle[mainSize] > style[mainSize]) {
+        itemStyle[mainSize] = style[mainSize]
+      }
+
+      if (itemStyle.flex) { 
+        // 模型简化为扩张缩小均可的 flex
+        flexLine.push(item)
+      } else if (mainSpace >= itemStyle[mainSize]) {
+        // 本行剩余空间可放下当前元素
+        flexLine.push(item)
+      } else {
+        // 剩余空间不足放下当前元素，新开一排
+
+        flexLine = [item]
+        flexLines.push(flexLine)
+
+        mainSpace = style[mainSize]
+        crossSpace = 0
+      }
+    }
+
+    mainSpace -= itemStyle[mainSize]
+    if (itemStyle[crossSize]) {
+      crossSpace = Math.max(crossSpace, itemStyle[crossSize])
+    }
+
+    flexLine.mainSpace = mainSpace
+    flexLine.crossSpace = crossSpace
+  }
+
+  return flexLines
 }
 
 module.exports = layout
