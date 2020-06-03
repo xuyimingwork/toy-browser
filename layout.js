@@ -30,13 +30,16 @@ function layout(element) {
     style, children: element.children, mainSize, crossSize
   })
 
+  calculateMainSize({ 
+    flexLines, style, 
+    mainSize, mainStart, mainEnd, mainSign, mainBase, })
 
-
-  console.log(flexLines)
+  console.log(flexLines[0])
 }
 
 function getStyle(element) {
   if (!element.style) element.style = {}
+  else return element.style
 
   for (let prop in element.computedStyle) {
     element.style[prop] = element.computedStyle[prop].value
@@ -175,11 +178,99 @@ function collectItemsIntoLines({
       crossSpace = Math.max(crossSpace, itemStyle[crossSize])
     }
 
+    // 本排主轴方向剩余空间
     flexLine.mainSpace = mainSpace
+    // 本排交叉轴方向占据空间
     flexLine.crossSpace = crossSpace
   }
 
   return flexLines
+}
+
+function calculateMainSize({ 
+  flexLines, style, 
+  mainSize, mainStart, mainEnd, mainSign, mainBase,
+}) {
+  flexLines.forEach(flexLine => {
+    // 获取本排剩余空间
+    const mainSpace = flexLine.mainSpace
+
+    // 获取本排 flex 值
+    const flexTotal = flexLine.reduce((flexTotal, item) => {
+      const itemStyle = getStyle(item)
+      if (itemStyle.flex) flexTotal += itemStyle.flex
+      return flexTotal
+    }, 0)
+
+    if (mainSpace < 0) {
+      // 本排元素需要宽度超过容器宽度，等比缩小本排各元素
+      const scale = style[mainSize] / (style[mainSize] - mainSpace)
+      let currentMainPosition = mainBase
+      flexLine.forEach(item => {
+        const itemStyle = getStyle(item)
+        if (itemStyle.flex) itemStyle[mainSize] = 0
+
+        // 主轴方向尺寸等比缩小
+        itemStyle[mainSize] = itemStyle[mainSize] * scale
+
+        // 计算主轴方向元素位置（排列个元素）
+        itemStyle[mainStart] = currentMainPosition
+        itemStyle[mainEnd] = itemStyle[mainStart] + mainSign * itemStyle[mainSize]
+        currentMainPosition = itemStyle[mainEnd]
+      })
+    } else if (flexTotal > 0) {
+      // 若本排存在剩余空间且存在 flex 元素
+      let currentMainPosition = mainBase
+      flexLine.forEach(item => {
+        const itemStyle = getStyle(item)
+
+        // flex 元素按比例分配本排剩余空间
+        if (itemStyle.flex) itemStyle[mainSize] = (mainSpace / flexTotal) * itemStyle.flex
+
+        // 计算主轴方向元素位置（排列个元素）
+        itemStyle[mainStart] = currentMainPosition
+        itemStyle[mainEnd] = itemStyle[mainStart] + mainSign * itemStyle[mainSize]
+        currentMainPosition = itemStyle[mainEnd]
+      })
+    } else {
+      // 若存在剩余空间且不存在 flex 元素，则 justifyContent 属性生效
+      let currentMainPosition
+      let gap
+      const justifyContent = style.justifyContent
+
+      if (justifyContent === 'flex-start') {
+        currentMainPosition = mainBase
+        gap = 0
+      }
+
+      if (justifyContent === 'flex-end') {
+        currentMainPosition = mainSpace * mainSign + mainBase
+        gap = 0
+      }
+
+      if (justifyContent === 'center') {
+        currentMainPosition = mainSpace / 2 * mainSign + mainBase
+        gap = 0
+      }
+
+      if (justifyContent === 'space-between') {
+        currentMainPosition = mainBase
+        gap = mainSpace / (flexLine.length - 1) * mainSign
+      }
+
+      if (justifyContent === 'space-around') {
+        gap = mainSpace / flexLine.length * mainSign
+        currentMainPosition = gap / 2 + mainBase
+      }
+
+      flexLine.forEach(item => {
+        const itemStyle = getStyle(item)
+        itemStyle[mainStart] = currentMainPosition
+        itemStyle[mainEnd] = itemStyle[mainStart] + mainSign * itemStyle[mainSize]
+        currentMainPosition = itemStyle[mainEnd] + gap
+      })
+    }
+  })
 }
 
 module.exports = layout
