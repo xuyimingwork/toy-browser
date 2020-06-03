@@ -723,6 +723,11 @@ iconv-lite@^0.4.24:
   dependencies:
     safer-buffer ">= 2.1.2 < 3"
 
+images@^3.2.2:
+  version "3.2.2"
+  resolved "https://registry.npm.taobao.org/images/download/images-3.2.2.tgz#eaa40c48b6e20d2bf1809dfbb407c7af1e8038e1"
+  integrity sha1-6qQMSLbiDSvxgJ37tAfHrx6AOOE=
+
 import-fresh@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npm.taobao.org/import-fresh/download/import-fresh-2.0.0.tgz#d81355c15612d386c61f9ddd3922d4304822a546"

@@ -39,8 +39,6 @@ function layout(element) {
     flexLines, style,
     crossSize, crossStart, crossEnd, crossSign, crossBase
   })
-
-  console.log(flexLines[0])
 }
 
 function getStyle(element) {

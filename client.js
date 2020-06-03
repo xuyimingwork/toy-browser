@@ -1,5 +1,7 @@
 const net = require('net');
+const images = require('images')
 const parser = require('./parser')
+const render = require('./render')
 
 class Request {
   constructor({
@@ -225,4 +227,8 @@ const request = new Request({
 request.send()
   .then(response => {
     const dom = parser.parseHTML(response.body)
+    const viewport = images(800, 600)
+    viewport.fill(255, 255, 255, 1)
+    render(viewport, dom)
+    viewport.save('viewport.jpg')
   });

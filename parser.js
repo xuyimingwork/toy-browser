@@ -341,4 +341,5 @@ module.exports.parseHTML = function(html) {
     state = state(c)
   }
   state = state(EOF)
+  return stack[0]
 }
