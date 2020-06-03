@@ -32,7 +32,13 @@ function layout(element) {
 
   calculateMainSize({ 
     flexLines, style, 
-    mainSize, mainStart, mainEnd, mainSign, mainBase, })
+    mainSize, mainStart, mainEnd, mainSign, mainBase 
+  })
+
+  calculateCrossSize({
+    flexLines, style,
+    crossSize, crossStart, crossEnd, crossSign, crossBase
+  })
 
   console.log(flexLines[0])
 }
@@ -270,6 +276,90 @@ function calculateMainSize({
         currentMainPosition = itemStyle[mainEnd] + gap
       })
     }
+  })
+}
+
+function calculateCrossSize({ 
+  flexLines, style,
+  crossSize, crossStart, crossEnd, crossSign, crossBase
+}) {
+  if (!style[crossSize]) {
+    // 容器元素未设置交叉轴尺寸，容器元素交叉轴尺寸为各排之和
+    element[crossSize] = flexLines.reduce((crossSize, flexLine) => {
+      return crossSize += flexLine.crossSize
+    }, 0)
+  }
+
+  // 若只有一排，撑开
+  if (flexLines.length === 1) flexLines[0].crossSpace = style[crossSize] 
+
+  // 计算剩余空间，存在剩余空间时依据 alignContent 计算各排位置
+  let crossSpace = style[crossSize]
+  flexLines.forEach(flexLine => crossSpace -= flexLine.crossSpace)
+  let gap = 0
+  if (crossSpace > 0 && style.flexWrap !== 'nowrap') {
+    if (style.alignContent === 'flex-start') {
+      crossBase += 0
+      gap = 0
+    }
+
+    if (style.alignContent === 'flex-end') {
+      crossBase += crossSign * crossSpace
+      gap = 0
+    }
+
+    if (style.alignContent === 'center') {
+      crossBase += (crossSign * crossSpace) / 2
+      gap = 0
+    }
+
+    if (style.alignContent === 'space-between') {
+      crossBase += 0
+      gap = crossSpace / (flexLines.length - 1)
+    }
+
+    if (style.alignContent === 'space-around') {
+      gap = crossSpace / flexLines.length
+      crossBase += crossSign * gap / 2
+    }
+
+    // alignContent 为 stretch 时，将多余的空间分配到各排
+    if (style.alignContent === 'stretch') {
+      crossBase += 0
+      gap = 0
+      flexLines.forEach(flexLine => flexLine.crossSpace += crossSpace / flexLines.length)
+    }
+  }
+
+  // 计算各排各元素交叉轴位置
+  flexLines.forEach(flexLine => {
+    const lineCrossSize = flexLine.crossSpace
+
+    flexLine.forEach(item => {
+      const itemStyle = getStyle(item)
+      align = itemStyle.alignSelf || style.alignItems
+  
+      // 获取元素交叉轴尺寸
+      if (!itemStyle[crossSize]) 
+        itemStyle[crossSize] = align === 'stretch' ? lineCrossSize : 0
+      
+      // 对排内元素执行 align 计算
+      if (align === 'flex-start') {
+        itemStyle[crossStart] = crossBase
+        itemStyle[crossEnd] = crossBase + crossSign * itemStyle[crossSize]
+      } else if (align === 'flex-end') {
+        itemStyle[crossEnd] = crossBase + crossSign * lineCrossSize
+        itemStyle[crossStart] = itemStyle[crossEnd] - crossSign * itemStyle[crossSize]
+      } else if (align === 'center') {
+        itemStyle[crossStart] = crossBase + crossSign * (lineCrossSize - itemStyle[crossSize])
+        itemStyle[crossEnd] = itemStyle[crossStart] + crossSign * itemStyle[crossSize]
+      } else if (align === 'stretch') {
+        itemStyle[crossStart] = crossBase
+        itemStyle[crossEnd] = crossBase + crossSign * itemStyle[crossSize]
+      }
+    })
+  
+    crossBase += crossSign * (lineCrossSize + gap)
   })
 }
 
